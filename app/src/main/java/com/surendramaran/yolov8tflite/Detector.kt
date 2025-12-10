@@ -3,6 +3,7 @@ package com.surendramaran.yolov8tflite
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
+import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -137,7 +138,7 @@ class Detector(
         val bestBoxes = bestBox(output.floatArray)
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
 
-        if (bestBoxes == null) {
+        if (bestBoxes == null || bestBoxes.isEmpty()) {
             detectorListener.onEmptyDetect()
             return
         }
@@ -146,11 +147,10 @@ class Detector(
     }
 
     private fun bestBox(array: FloatArray) : List<BoundingBox>? {
-
         val boundingBoxes = mutableListOf<BoundingBox>()
 
         for (c in 0 until numElements) {
-            var maxConf = CONFIDENCE_THRESHOLD
+            var maxConf = 0f
             var maxIdx = -1
             var j = 4
             var arrayIdx = c + numElements * j
@@ -165,10 +165,10 @@ class Detector(
 
             if (maxConf > CONFIDENCE_THRESHOLD) {
                 val clsName = labels[maxIdx]
-                val cx = array[c] // 0
-                val cy = array[c + numElements] // 1
-                val w = array[c + numElements * 2]
-                val h = array[c + numElements * 3]
+                val cx = array[c] / tensorWidth
+                val cy = array[c + numElements] / tensorHeight
+                val w = array[c + numElements * 2] / tensorWidth
+                val h = array[c + numElements * 3] / tensorHeight
                 val x1 = cx - (w/2F)
                 val y1 = cy - (h/2F)
                 val x2 = cx + (w/2F)
@@ -232,11 +232,12 @@ class Detector(
     }
 
     companion object {
+        private const val TAG = "Detector"
         private const val INPUT_MEAN = 0f
         private const val INPUT_STANDARD_DEVIATION = 255f
         private val INPUT_IMAGE_TYPE = DataType.FLOAT32
         private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
-        private const val CONFIDENCE_THRESHOLD = 0.3F
+        private const val CONFIDENCE_THRESHOLD = 0.1F
         private const val IOU_THRESHOLD = 0.5F
     }
 }

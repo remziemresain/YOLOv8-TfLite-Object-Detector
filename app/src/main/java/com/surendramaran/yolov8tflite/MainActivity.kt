@@ -180,6 +180,7 @@ class MainActivity : AppCompatActivity(), Detector.DetectorListener {
 
     override fun onEmptyDetect() {
         runOnUiThread {
+            Log.d(TAG, "onEmptyDetect triggered")
             binding.overlay.clear()
         }
     }
