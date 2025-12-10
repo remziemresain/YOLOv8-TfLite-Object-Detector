@@ -3,7 +3,6 @@ package com.surendramaran.yolov8tflite
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -24,6 +23,7 @@ class Detector(
     private val modelPath: String,
     private val labelPath: String,
     private val detectorListener: DetectorListener,
+    private var confidenceThreshold: Float
 ) {
 
     private var interpreter: Interpreter
@@ -88,6 +88,10 @@ class Detector(
         } catch (e: IOException) {
             e.printStackTrace()
         }
+    }
+
+    fun setConfidenceThreshold(threshold: Float) {
+        this.confidenceThreshold = threshold
     }
 
     fun restart(isGpu: Boolean) {
@@ -163,7 +167,7 @@ class Detector(
                 arrayIdx += numElements
             }
 
-            if (maxConf > CONFIDENCE_THRESHOLD) {
+            if (maxConf > confidenceThreshold) {
                 val clsName = labels[maxIdx]
                 val cx = array[c] / tensorWidth
                 val cy = array[c + numElements] / tensorHeight
@@ -232,12 +236,10 @@ class Detector(
     }
 
     companion object {
-        private const val TAG = "Detector"
         private const val INPUT_MEAN = 0f
         private const val INPUT_STANDARD_DEVIATION = 255f
         private val INPUT_IMAGE_TYPE = DataType.FLOAT32
         private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
-        private const val CONFIDENCE_THRESHOLD = 0.1F
         private const val IOU_THRESHOLD = 0.5F
     }
 }

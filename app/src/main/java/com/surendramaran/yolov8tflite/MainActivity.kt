@@ -1,6 +1,8 @@
 package com.surendramaran.yolov8tflite
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -42,7 +44,9 @@ class MainActivity : AppCompatActivity(), Detector.DetectorListener {
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         cameraExecutor.execute {
-            detector = Detector(baseContext, MODEL_PATH, LABELS_PATH, this)
+            val sharedPreferences = getSharedPreferences(SettingsActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val threshold = sharedPreferences.getFloat(SettingsActivity.CONFIDENCE_THRESHOLD_KEY, 0.1f)
+            detector = Detector(baseContext, MODEL_PATH, LABELS_PATH, this, threshold)
         }
 
         if (allPermissionsGranted()) {
@@ -55,6 +59,9 @@ class MainActivity : AppCompatActivity(), Detector.DetectorListener {
     }
 
     private fun bindListeners() {
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         binding.apply {
             isGpu.setOnCheckedChangeListener { buttonView, isChecked ->
                 cameraExecutor.submit {
@@ -168,6 +175,10 @@ class MainActivity : AppCompatActivity(), Detector.DetectorListener {
         } else {
             requestPermissionLauncher.launch(REQUIRED_PERMISSIONS)
         }
+
+        val sharedPreferences = getSharedPreferences(SettingsActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        val threshold = sharedPreferences.getFloat(SettingsActivity.CONFIDENCE_THRESHOLD_KEY, 0.1f)
+        detector?.setConfidenceThreshold(threshold)
     }
 
     companion object {
@@ -180,7 +191,6 @@ class MainActivity : AppCompatActivity(), Detector.DetectorListener {
 
     override fun onEmptyDetect() {
         runOnUiThread {
-            Log.d(TAG, "onEmptyDetect triggered")
             binding.overlay.clear()
         }
     }
